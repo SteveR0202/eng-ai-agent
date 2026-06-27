@@ -1,0 +1,49 @@
+1.DuckLake keeps metadata in a SQL catalog and data in Parquet on object storage. What does this separation buy you compared with a single self-contained file, and what are the consistency implications when several clients read at once?
+
+Compared to a single file like CSV or JSON it must be fully read each time, cannot scale well and is not efficient with metadata tracking.
+
+The consistency with several clients reading at once is that they may read the same snapshot safely, each query sees a consistent view of data, new writes do not affect the ongoing reads, and prevents from half-updated results. 
+
+2.Updates are modeled as delete-plus-insert and every change records an immutable snapshot. Explain, in terms of snapshots and data files, how time travel and rollback work, and what keeping all snapshots costs over time.
+
+A snapshot records which files are valid at that time while the old parquet files are never modified during every update including a delete plus and insert. 
+
+Time travel revolves around DuckLake looking up snapshots which only uses the parquet files linked to that snapshot.
+
+Rollback switches the active snapshot back to an older one which the system reuses the old parquet file and no data has been rewritten.
+
+3.DuckLake has no primary keys or constraints. How did you guarantee uniqueness and quality in silver and gold without them?
+
+Since DuckLake does not enforce constraints , it has to be enforced manually. 
+In the silver layer it removes the invalid rows and cleans missing/incorrect data.
+In the gold layer it aggregates data with category counts and ensures structure on outputs.
+The uniqueness is handled by controlling the ingestion scripts, reduction logic in Python/SQL and stable IDs from datasets(COCO/Visdrone) which guarantees quality by pipeline logic and no database constraints.  
+
+4.Trace a single INSERT into a raw table all the way to bytes: catalog entry, new snapshot, Parquet file, S3 object in RustFS. Where does each piece of state actually live?
+
+When you insert into a raw table the first thing is to take a catalog entry  such as DuckDB records or table schema updated. Create a snapshot with a snapshot ID and its points to the updated data set. Create the parquet file and write the data onto it. Then store the object onto the RustFS bucket lakehouse.
+
+5.Why put the catalog in a SQL database at all, rather than in files alongside the data (as file-only table formats do)? What does that choice make easy, and what does it make harder?
+
+The reason for using a SQL database catalog is to use fast metadata queries, easy snapshot tracking, transaction management, and multiple concurrent users can access. 
+
+What makes it harder is that it requires database engines such as DuckDB, more system complexity than file only formats, and dependency on catalog consistency.
+ 
+
+6.Your image and video bytes never enter a DuckLake table. Explain why, what the tables hold instead, and how the VisDrone fragment index lets DuckDB answer “give me the busy fragments” without scanning whole videos.
+
+Images/videos are not in DuckLake tables since they are large binary files and storing them in tables would be inefficient which is why metadata is stored in DuckDB while actual bytes are stored in RustFS. 
+
+Tables contain file names, S3 URIs, bounding boxes, image dimensions, frame indexes. 
+
+VisDrone fragment index purpose is store the fragment table which contains the video id, frame start, frame end and S3 URI. The benefits are query only relevant fragment, avoid full dataset scan and faster analytics. 
+
+Example:
+
+SELECT *
+FROM visdrone_fragments
+WHERE frame_start <= 100 AND frame_end >= 50;
+
+Which would result in only accessing busy or relevant video segments. 
+
+

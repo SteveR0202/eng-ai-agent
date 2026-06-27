@@ -1,0 +1,7 @@
+VISDRONE FRAGMENT QUERY OUTPUT
+
+   fragment_id video_id  frame_start  frame_end                                         s3_uri
+0            2   images           50         99  s3://lakehouse/visdrone/images/fragment_2.jpg
+1            3   images          100        149  s3://lakehouse/visdrone/images/fragment_3.jpg
+2            2   images           50         99  s3://lakehouse/visdrone/images/fragment_2.jpg
+3            3   images          100        149  s3://lakehouse/visdrone/images/fragment_3.jpg

@@ -208,3 +208,13 @@ log/
 
 # Beads archive (migrated to Jira 2026-04-13)
 .beads-archive.zip
+
+# Ignore DuckDB database files and write-ahead logs
+*.ducklake
+*.ducklake.wal
+
+# Ignore system/metadata folders and raw data storage
+rustfs-data/
+annotations/
+coco/
+visdrone/

@@ -1,0 +1,8 @@
+VERSIONING DEMO (DUCKDB COMPATIBLE)
+
+BASELINE COUNT: (0,)
+AFTER INSERT COUNT: (1,)
+AFTER ROLLBACK COUNT: (0,)
+
+NOTE:
+Versioning simulated using insert/delete state changes
